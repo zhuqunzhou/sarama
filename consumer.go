@@ -17,10 +17,11 @@ type ConsumerMessage struct {
 	Timestamp      time.Time       // only set if kafka is version 0.10+, inner message timestamp
 	BlockTimestamp time.Time       // only set if kafka is version 0.10+, outer (compressed) block timestamp
 
-	Key, Value []byte
-	Topic      string
-	Partition  int32
-	Offset     int64
+	Key, Value       []byte
+	AnyKey, AnyValue interface{}
+	Topic            string
+	Partition        int32
+	Offset           int64
 }
 
 // ConsumerError is what is provided to the user when an error occurs.
@@ -74,6 +75,7 @@ type Consumer interface {
 
 type consumer struct {
 	conf            *Config
+	deserializer    Deserializer
 	children        map[string]map[int32]*partitionConsumer
 	brokerConsumers map[*Broker]*brokerConsumer
 	client          Client
@@ -110,6 +112,8 @@ func newConsumer(client Client) (Consumer, error) {
 		children:        make(map[string]map[int32]*partitionConsumer),
 		brokerConsumers: make(map[*Broker]*brokerConsumer),
 	}
+
+	c.deserializer = c.conf.Consumer.Serde.Deserializer()
 
 	return c, nil
 }
@@ -505,7 +509,8 @@ func (child *partitionConsumer) parseMessages(msgSet *MessageSet) ([]*ConsumerMe
 			if offset < child.offset {
 				continue
 			}
-			messages = append(messages, &ConsumerMessage{
+
+			msg := &ConsumerMessage{
 				Topic:          child.topic,
 				Partition:      child.partition,
 				Key:            msg.Msg.Key,
@@ -513,7 +518,14 @@ func (child *partitionConsumer) parseMessages(msgSet *MessageSet) ([]*ConsumerMe
 				Offset:         offset,
 				Timestamp:      timestamp,
 				BlockTimestamp: msgBlock.Msg.Timestamp,
-			})
+			}
+
+			msg, err := child.consumer.deserializer.Deserialize(msg)
+			if err != nil {
+				return messages, err
+			}
+
+			messages = append(messages, msg)
 			child.offset = offset + 1
 		}
 	}
@@ -535,7 +547,8 @@ func (child *partitionConsumer) parseRecords(batch *RecordBatch) ([]*ConsumerMes
 		if batch.LogAppendTime {
 			timestamp = batch.MaxTimestamp
 		}
-		messages = append(messages, &ConsumerMessage{
+
+		msg := &ConsumerMessage{
 			Topic:     child.topic,
 			Partition: child.partition,
 			Key:       rec.Key,
@@ -543,7 +556,14 @@ func (child *partitionConsumer) parseRecords(batch *RecordBatch) ([]*ConsumerMes
 			Offset:    offset,
 			Timestamp: timestamp,
 			Headers:   rec.Headers,
-		})
+		}
+
+		msg, err := child.consumer.deserializer.Deserialize(msg)
+		if err != nil {
+			return messages, err
+		}
+
+		messages = append(messages, msg)
 		child.offset = offset + 1
 	}
 	if len(messages) == 0 {
