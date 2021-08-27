@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/eapache/go-xerial-snappy"
-	"github.com/pierrec/lz4"
 )
 
 // CompressionCodec represents the various compression codecs recognized by Kafka in messages.
@@ -102,18 +101,6 @@ func (m *Message) encode(pe packetEncoder) error {
 			tmp := snappy.Encode(m.Value)
 			m.compressedCache = tmp
 			payload = m.compressedCache
-		case CompressionLZ4:
-			var buf bytes.Buffer
-			writer := lz4.NewWriter(&buf)
-			if _, err = writer.Write(m.Value); err != nil {
-				return err
-			}
-			if err = writer.Close(); err != nil {
-				return err
-			}
-			m.compressedCache = buf.Bytes()
-			payload = m.compressedCache
-
 		default:
 			return PacketEncodingError{fmt.Sprintf("unsupported compression codec (%d)", m.Codec)}
 		}
@@ -191,17 +178,6 @@ func (m *Message) decode(pd packetDecoder) (err error) {
 			break
 		}
 		if m.Value, err = snappy.Decode(m.Value); err != nil {
-			return err
-		}
-		if err := m.decodeSet(); err != nil {
-			return err
-		}
-	case CompressionLZ4:
-		if m.Value == nil {
-			break
-		}
-		reader := lz4.NewReader(bytes.NewReader(m.Value))
-		if m.Value, err = ioutil.ReadAll(reader); err != nil {
 			return err
 		}
 		if err := m.decodeSet(); err != nil {
