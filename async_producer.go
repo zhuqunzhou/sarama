@@ -193,7 +193,7 @@ func (pe ProducerError) Error() string {
 type ProducerErrors []*ProducerError
 
 func (pe ProducerErrors) Error() string {
-	Logger.Println("kafka error log:"+pe[0].Error())
+	fmt.Println("kafka error log:"+pe[0].Error())
 	return fmt.Sprintf("kafka: Failed to deliver %d messages.", len(pe))
 }
 
@@ -277,6 +277,7 @@ func (p *asyncProducer) dispatcher() {
 			continue
 		}
 		if msg.byteSize(version) > p.conf.Producer.MaxMessageBytes {
+			Logger.Println("big msg:%s,size:%d",msg.Value,msg.byteSize(version))
 			p.returnError(msg, ErrMessageSizeTooLarge)
 			continue
 		}
