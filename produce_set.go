@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+
 type partitionSet struct {
 	msgs          []*ProducerMessage
 	recordsToSend Records
@@ -214,14 +215,19 @@ func (ps *produceSet) wouldOverflow(msg *ProducerMessage) bool {
 	switch {
 	// Would we overflow our maximum possible size-on-the-wire? 10KiB is arbitrary overhead for safety.
 	case ps.bufferBytes+msg.byteSize(version) >= int(MaxRequestSize-(10*1024)):
+		Logger.Printf("msgSize:%d ,bufferBytes:%d ,maxRequestSize:%d",msg.byteSize(version),ps.bufferBytes,MaxRequestSize)
+
 		return true
 	// Would we overflow the size-limit of a compressed message-batch for this partition?
 	case ps.parent.conf.Producer.Compression != CompressionNone &&
 		ps.msgs[msg.Topic] != nil && ps.msgs[msg.Topic][msg.Partition] != nil &&
 		ps.msgs[msg.Topic][msg.Partition].bufferBytes+msg.byteSize(version) >= ps.parent.conf.Producer.MaxMessageBytes:
+		Logger.Printf("Would we overflow the size-limit of a compressed message-batch for this partition")
+
 		return true
 	// Would we overflow simply in number of messages?
 	case ps.parent.conf.Producer.Flush.MaxMessages > 0 && ps.bufferCount >= ps.parent.conf.Producer.Flush.MaxMessages:
+		Logger.Printf("Would we overflow simply in number of messages")
 		return true
 	default:
 		return false
