@@ -174,7 +174,7 @@ func (err KError) Error() string {
 	case ErrReplicaNotAvailable:
 		return "kafka server: Replica information not available, one or more brokers are down."
 	case ErrMessageSizeTooLarge:
-		return "kafka server: Message was too large, server rejected it to avoid allocation error."
+		return "kafka server: sdk print Message was too large, server rejected it to avoid allocation error."
 	case ErrStaleControllerEpochCode:
 		return "kafka server: StaleControllerEpochCode (internal error code for broker-to-broker communication)."
 	case ErrOffsetMetadataTooLarge:
