@@ -775,6 +775,8 @@ func (bp *brokerProducer) handleSuccess(sent *produceSet, response *ProduceRespo
 			bp.parent.retryMessages(bp.buffer.dropPartition(topic, partition), block.Err)
 		// Other non-retriable errors
 		default:
+			Logger.Printf("producer/broker/%d send error on %s/%d because %v\n",
+				bp.broker.ID(), topic, partition, block.Err)
 			bp.parent.returnErrors(msgs, block.Err)
 		}
 	})
