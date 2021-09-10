@@ -193,7 +193,7 @@ func (pe ProducerError) Error() string {
 type ProducerErrors []*ProducerError
 
 func (pe ProducerErrors) Error() string {
-	return fmt.Sprintf("kafka: Failed to deliver %d messages. %s", len(pe),pe[0].Error())
+	return fmt.Sprintf("kafka: Failed to deliver %d messages.first error %s ", len(pe),pe[0].Error())
 }
 
 func (p *asyncProducer) Errors() <-chan *ProducerError {
@@ -775,8 +775,6 @@ func (bp *brokerProducer) handleSuccess(sent *produceSet, response *ProduceRespo
 			bp.parent.retryMessages(bp.buffer.dropPartition(topic, partition), block.Err)
 		// Other non-retriable errors
 		default:
-			Logger.Printf("producer/broker/%d send error on %s/%d because %v\n",
-				bp.broker.ID(), topic, partition, block.Err)
 			bp.parent.returnErrors(msgs, block.Err)
 		}
 	})
