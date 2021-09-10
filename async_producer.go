@@ -193,8 +193,7 @@ func (pe ProducerError) Error() string {
 type ProducerErrors []*ProducerError
 
 func (pe ProducerErrors) Error() string {
-	fmt.Println("error ....",pe[0].Error())
-	return fmt.Sprintf("kafka: Failed to deliver %d messages.", len(pe))
+	return fmt.Sprintf("kafka: Failed to deliver %d messages. %s", len(pe),pe[0].Error())
 }
 
 func (p *asyncProducer) Errors() <-chan *ProducerError {
