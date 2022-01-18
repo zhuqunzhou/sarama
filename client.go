@@ -772,10 +772,12 @@ func (client *client) updateMetadata(data *MetadataResponse, allKnownMetaData bo
 			continue
 		case ErrUnknownTopicOrPartition: // retry, do not store partial partition results
 			err = topic.Err
+			Logger.Println("client/metadata ErrUnknownTopicOrPartition found some partitions to be leaderless,topic : %s",topic.Name)
 			retry = true
 			continue
 		case ErrLeaderNotAvailable: // retry, but store partial partition results
 			retry = true
+			Logger.Println("client/metadata ErrLeaderNotAvailable found some partitions to be leaderless,topic : %s",topic.Name)
 			break
 		default: // don't retry, don't store partial results
 			Logger.Printf("Unexpected topic-level metadata error: %s", topic.Err)
