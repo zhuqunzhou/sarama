@@ -789,6 +789,7 @@ func (client *client) updateMetadata(data *MetadataResponse, allKnownMetaData bo
 		for _, partition := range topic.Partitions {
 			client.metadata[topic.Name][partition.ID] = partition
 			if partition.Err == ErrLeaderNotAvailable {
+				Logger.Println("client/metadata partition ErrLeaderNotAvailable found some partitions to be leaderless,topic : %s",topic.Name)
 				retry = true
 			}
 		}
